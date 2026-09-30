@@ -17,6 +17,14 @@ const db = new sqlite3.Database(dbPath, (err) => {
     console.error('Грешка при свързване с базата данни:', err.message);
   } else {
     console.log('Свързано с SQLite базата данни.');
+    
+    // АВТОМАТИЧНО СЪЗДАВАНЕ НА ТАБЛИЦАТА (ако не съществува)
+    db.run(`CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE,
+      password TEXT,
+      role TEXT
+    )`);
   }
 });
 
@@ -31,10 +39,10 @@ app.get('/api', (req, res) => {
 });
 
 // ----------------------------------------------------
-// ТВОИТЕ API МАРШРУТИ (Примерни заявки за вход и потребители)
+// API МАРШРУТИ
 // ----------------------------------------------------
 
-// Пример: Вход в системата (Login)
+// Вход в системата (Login)
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
   const sql = `SELECT * FROM users WHERE username = ? AND password = ?`;
@@ -50,7 +58,24 @@ app.post('/api/login', (req, res) => {
   });
 });
 
-// Пример: Вземане на всички потребители
+// НОВО: Регистрация на нов потребител (Register)
+app.post('/api/register', (req, res) => {
+  const { username, password } = req.body;
+  const role = 'User'; // Роля по подразбиране
+  const sql = `INSERT INTO users (username, password, role) VALUES (?, ?, ?)`;
+  
+  db.run(sql, [username, password, role], function(err) {
+    if (err) {
+      if (err.message.includes('UNIQUE')) {
+        return res.status(400).json({ message: 'Това име вече е заето.' });
+      }
+      return res.status(500).json({ error: err.message });
+    }
+    res.json({ message: 'Регистрацията е успешна!' });
+  });
+});
+
+// Вземане на всички потребители
 app.get('/api/users', (req, res) => {
   const sql = `SELECT id, username, role FROM users`;
   db.all(sql, [], (err, rows) => {
