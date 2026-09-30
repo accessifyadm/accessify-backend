@@ -18,8 +18,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
   } else {
     console.log('Свързано с SQLite базата данни.');
     
-    // АВТОМАТИЧНО СЪЗДАВАНЕ НА ТАБЛИЦАТА (ако не съществува)
-    db.run(`CREATE TABLE IF NOT EXISTS users (
+    // СМЕНЯМЕ ИМЕТО НА ТАБЛИЦАТА НА app_users, за да създадем нова, чиста база
+    db.run(`CREATE TABLE IF NOT EXISTS app_users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE,
       password TEXT,
@@ -28,7 +28,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
   }
 });
 
-// 1. Начална страница (Оправя "Cannot GET /")
+// 1. Начална страница
 app.get('/', (req, res) => {
   res.send('Accessify API работи успешно в Render!');
 });
@@ -45,7 +45,7 @@ app.get('/api', (req, res) => {
 // Вход в системата (Login)
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
-  const sql = `SELECT * FROM users WHERE username = ? AND password = ?`;
+  const sql = `SELECT * FROM app_users WHERE username = ? AND password = ?`;
   
   db.get(sql, [username, password], (err, user) => {
     if (err) {
@@ -58,11 +58,11 @@ app.post('/api/login', (req, res) => {
   });
 });
 
-// НОВО: Регистрация на нов потребител (Register)
+// Регистрация на нов потребител (Register)
 app.post('/api/register', (req, res) => {
   const { username, password } = req.body;
-  const role = 'User'; // Роля по подразбиране
-  const sql = `INSERT INTO users (username, password, role) VALUES (?, ?, ?)`;
+  const role = 'User'; 
+  const sql = `INSERT INTO app_users (username, password, role) VALUES (?, ?, ?)`;
   
   db.run(sql, [username, password, role], function(err) {
     if (err) {
@@ -77,7 +77,7 @@ app.post('/api/register', (req, res) => {
 
 // Вземане на всички потребители
 app.get('/api/users', (req, res) => {
-  const sql = `SELECT id, username, role FROM users`;
+  const sql = `SELECT id, username, role FROM app_users`;
   db.all(sql, [], (err, rows) => {
     if (err) {
       return res.status(500).json({ error: err.message });
